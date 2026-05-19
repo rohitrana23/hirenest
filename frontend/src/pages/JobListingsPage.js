@@ -45,7 +45,7 @@ const JobListingsPage = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.heroSection}>
+      <div style={styles.heroSection} className="jobs-hero">
         <h1 style={styles.heroTitle}>Find Your Next Opportunity</h1>
         <p style={styles.heroSub}>Search through hundreds of live job listings</p>
 
@@ -103,14 +103,20 @@ const styles = {
     color: 'var(--text)',
   },
   heroSection: {
-    backgroundColor: 'var(--surface)',
-    padding: '3rem 2rem',
+    backgroundImage: `linear-gradient(rgba(7, 10, 18, 0.82), rgba(7, 10, 18, 0.82)), url(${process.env.PUBLIC_URL}/bg.png)`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    minHeight: '60vh',
+    padding: '5rem 2rem 4rem',
     textAlign: 'center',
     borderBottom: '1px solid var(--border)',
+    position: 'relative',
+    overflow: 'hidden',
   },
   heroTitle: {
-    fontSize: '2.2rem',
-    margin: '0 0 0.5rem',
+    fontSize: '2.6rem',
+    margin: '0 0 0.75rem',
     color: 'var(--text)',
   },
   heroSub: {

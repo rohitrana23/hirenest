@@ -40,9 +40,9 @@ const Navbar = () => {
           </>
         )}
 
-        <button onClick={toggleTheme} className="navbar-theme-toggle" style={styles.themeBtn}>
+        {/* <button onClick={toggleTheme} className="navbar-theme-toggle" style={styles.themeBtn}>
           {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
+        </button> */}
       </div>
     </nav>
   );

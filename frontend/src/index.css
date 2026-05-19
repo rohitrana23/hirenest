@@ -111,3 +111,20 @@ button {
 footer a:hover {
   color: var(--primary);
 }
+
+.jobs-hero {
+  position: relative;
+}
+
+.jobs-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 10, 18, 0.45);
+  pointer-events: none;
+}
+
+.jobs-hero > * {
+  position: relative;
+  z-index: 1;
+}

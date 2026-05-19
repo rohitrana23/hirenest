@@ -1,7 +1,10 @@
 // controllers/authController.js — Handles user registration and login
 
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ─── Helper: Generate JWT token ───────────────────────────────────────────────
 // We store only the user's id in the token payload (keep it minimal)
@@ -62,6 +65,10 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    if (user.provider !== 'local') {
+      return res.status(400).json({ message: 'Please sign in with Google for this account' });
+    }
+
     // Compare entered password with hashed password in DB
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
@@ -80,4 +87,49 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+// ─── @route  POST /api/auth/google ───────────────────────────────────────────
+// @desc    Authenticate or create user via Google OAuth token
+// @access  Public
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken, role } = req.body;
+    if (!idToken || !role) {
+      return res.status(400).json({ message: 'Google token and role are required' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload?.email_verified) {
+      return res.status(401).json({ message: 'Google email not verified' });
+    }
+
+    const email = payload.email.toLowerCase();
+    const name = payload.name || 'Google User';
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        provider: 'google',
+        role,
+      });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Google auth failed', error: error.message });
+  }
+};
+
+module.exports = { register, login, googleLogin };
