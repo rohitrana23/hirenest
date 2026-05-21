@@ -1,6 +1,6 @@
 // src/pages/RegisterPage.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 const RegisterPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const [form, setForm] = useState({
     name: '',
@@ -17,6 +19,59 @@ const RegisterPage = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      return;
+    }
+
+    const initGoogle = () => {
+      if (globalThis.google?.accounts?.id) {
+        globalThis.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+        });
+        globalThis.google.accounts.id.renderButton(
+          document.getElementById('google-signup-button'),
+          { theme: 'outline', size: 'large', width: '100%' }
+        );
+      }
+    };
+
+    if (globalThis.google?.accounts?.id) {
+      initGoogle();
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', initGoogle);
+      return () => existingScript.removeEventListener('load', initGoogle);
+    }
+  }, [form.role]);
+
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response?.credential) {
+      setError('Google sign up failed');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const { data } = await api.post('/auth/google', {
+        idToken: response.credential,
+        role: form.role,
+      });
+      login(data);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Google sign up failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -106,6 +161,12 @@ const RegisterPage = () => {
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
+
+        <div style={styles.divider}>OR</div>
+
+        <div style={styles.googleSection}>
+          <div id="google-signup-button" style={styles.googleButton} />
+        </div>
 
         <p style={styles.footer}>
           Already have an account?{' '}
@@ -206,6 +267,18 @@ const styles = {
     fontSize: '1rem',
     fontWeight: '700',
     cursor: 'pointer',
+  },
+  divider: {
+    textAlign: 'center',
+    color: 'var(--muted)',
+    margin: '1.5rem 0 1rem',
+  },
+  googleSection: {
+    marginTop: '1rem',
+  },
+  googleButton: {
+    width: '100%',
+    marginTop: '0.75rem',
   },
   footer: {
     textAlign: 'center',
